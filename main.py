@@ -57,28 +57,34 @@ def rename_files_in_directory(directory, filter_names, mode='independent'):
             print(f"已重命名: {old_file_path} -> {new_file_path}")
     
     elif mode == 'sequential':
-        # 按文件后缀排序，再按时间戳排序，并为每种文件类型分配独立的编号序列
-        extensions = sorted(set(f.split('.')[-1] for f in all_files))
+        # 按文件后缀字母序分组，组内按时间排序，全局连续编号
+        extensions = sorted(set(f.split('.')[-1] for f in all_files))  # 确保扩展名按字母序排列
+        sorted_files = []
+        
+        # 按扩展名顺序收集文件（先处理字母序靠前的扩展名）
         for extension in extensions:
             files = [f for f in all_files if f.split('.')[-1] == extension]
-            file_timestamps = {}
-            for file in files:
-                timestamp_str = '.'.join(file.split('.')[:-1])
-                try:
-                    timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S')
-                    file_timestamps[file] = timestamp
-                except ValueError:
-                    print(f"文件名格式错误: {file}")
-            sorted_files = sorted(file_timestamps, key=file_timestamps.get)
-            for index, file in enumerate(sorted_files, start=1):
-                new_file_name = f"{extension}_{index}.{extension}"
-                old_file_path = os.path.join(directory, file)
-                new_file_path = os.path.join(directory, new_file_name)
-                os.rename(old_file_path, new_file_path)
-                print(f"已重命名: {old_file_path} -> {new_file_path}")
+            # 组内按时间排序
+            file_timestamps = {
+                f: datetime.strptime('.'.join(f.split('.')[:-1]), '%Y-%m-%d %H-%M-%S')
+                for f in files
+                if len(f.split('.')) >= 2  # 防止无后缀文件报错
+            }
+            sorted_files.extend(sorted(file_timestamps, key=file_timestamps.get))
+        
+        # 全局连续编号（符合文档示例）
+        global_index = 1
+        for file in sorted_files:
+            extension = file.split('.')[-1]
+            new_file_name = f"{extension}_{global_index}.{extension}"
+            old_file_path = os.path.join(directory, file)
+            new_file_path = os.path.join(directory, new_file_name)
+            os.rename(old_file_path, new_file_path)
+            print(f"已重命名: {old_file_path} -> {new_file_path}")
+            global_index += 1
 
-directory_path = r'j:\Files\Video\服务器生存' # 目录路径
-filter_names = ['process.py', 'start.bat'] # 过滤文件名
+directory_path = r'C:\Users\qf\Desktop\Video' # 目录路径
+filter_names = ['main.py', 'start.bat', 'README.md'] # 过滤文件名
 
 mode_id = 'sequential' # 模式标识
 
